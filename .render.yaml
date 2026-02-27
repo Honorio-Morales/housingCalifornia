@@ -1,0 +1,10 @@
+# Optional Render service definition (example)
+# This file is illustrative; you can create services via Render UI using the same commands.
+services:
+  - type: web
+    name: housing-california-api
+    env: docker
+    dockerfilePath: Dockerfile.api
+    plan: free
+    buildCommand: ""
+    startCommand: "uvicorn src.api:app --host 0.0.0.0 --port $PORT"

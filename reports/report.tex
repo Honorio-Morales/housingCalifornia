@@ -1,0 +1,81 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=1in}
+\title{Taller 1.1 -- Housing California: Regresión Lineal y Polinomial}
+\author{Equipo}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Resumen}
+Este informe resume el Análisis Exploratorio de Datos (EDA) y la comparación entre un modelo de Regresión Lineal Múltiple y Modelos de Regresión Polinomial (grado 2 y 3) usados para predecir el valor medio de la vivienda (`MedHouseVal`) en el dataset California Housing.
+
+\section{Dataset}
+El dataset local utilizado está en `data/california_housing.csv`. Se emplearon las features: `MedInc`, `HouseAge`, `AveRooms`, `AveBedrms`, `Population`, `Latitude`, `Longitude`.
+
+\section{Análisis Exploratorio (EDA)}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/heatmap_correlation.png}
+  \caption{Heatmap de correlaciones entre features y la variable objetivo.}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/scatter_top_features.png}
+  \caption{Scatter plots: variables más correlacionadas frente a `MedHouseVal`.}
+\end{figure}
+
+\section{Modelado y Métricas}
+Se entrenaron los siguientes modelos y se evaluó su desempeño en el conjunto de prueba (mismas particiones que en `src/train.py`):
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Modelo & $R^2$ & RMSE \\
+\midrule
+Regresión Lineal Múltiple & 0.5751 & 0.7462 \\
+Regresión Polinomial (grado 2) & 0.6070 & 0.7176 \\
+Regresión Polinomial (grado 3) & 0.5393 & 0.7770 \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de métricas (R$^2$ y RMSE) en el conjunto de prueba.}
+\end{table}
+
+\section{Real vs Predicho y Análisis de Residuos}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/pred_resid_linear.png}
+  \caption{Real vs Predicho y residuos -- Regresión Lineal.}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/pred_resid_poly2.png}
+  \caption{Real vs Predicho y residuos -- Polinomial grado 2.}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/pred_resid_poly3.png}
+  \caption{Real vs Predicho y residuos -- Polinomial grado 3.}
+\end{figure}
+
+\section{Conclusiones preliminares}
+El modelo polinomial de grado 2 presenta la mejor $R^2$ y menor RMSE en el conjunto de prueba (posible mejor ajuste sin overfitting evidente respecto a grado 3). Se recomienda:\\
+- Revisar feature engineering y regularización si se busca mejorar generalización.\\
+- Analizar residuos por segmento geográfico (Latitude/Longitude) para detectar patrones espaciales.
+
+\section*{Compilación}
+Para compilar este documento localmente (desde la raíz del proyecto):
+\begin{verbatim}
+cd reports
+pdflatex report.tex
+\end{verbatim}
+
+\end{document}
