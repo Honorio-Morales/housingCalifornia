@@ -22,6 +22,20 @@ def _load_model(model_type: str):
         return None
 
 model = _load_model(MODEL_TYPE)
+# If polynomial model selected, try to load its transformer
+poly_transform = None
+if MODEL_TYPE == 'poly2':
+    try:
+        poly_transform = joblib.load(os.getenv('POLY2_PATH', 'models/poly_2_transform.joblib'))
+    except Exception:
+        poly_transform = None
+if MODEL_TYPE == 'poly3':
+    try:
+        poly_transform = joblib.load(os.getenv('POLY3_PATH', 'models/poly_3_transform.joblib'))
+    except Exception:
+        poly_transform = None
+
+print(f"Model loaded: {model is not None}, model_type={MODEL_TYPE}, poly_transform={poly_transform is not None}")
 
 # Enable CORS so a separate frontend (Streamlit or other) can call this API
 app.add_middleware(
@@ -56,5 +70,18 @@ def predict(payload: InputFeatures):
         payload.Latitude,
         payload.Longitude
     ]])
+    # If polynomial model, apply transformer first
+    if MODEL_TYPE.startswith('poly'):
+        if poly_transform is None:
+            raise HTTPException(status_code=500, detail='Polynomial transformer not loaded')
+        try:
+            x = poly_transform.transform(x)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f'Error transforming input: {e}')
     pred = model.predict(x)
     return {'prediction': float(pred[0])}
+
+
+@app.get('/health')
+def health():
+    return {'model_loaded': model is not None, 'model_type': MODEL_TYPE}
