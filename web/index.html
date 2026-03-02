@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <title>Housing California Predictor</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    label { display: block; margin-top: 1rem; }
-    input { width: 100%; padding: 0.4rem; }
-    button { margin-top: 1.5rem; padding: 0.6rem 1.2rem; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 2rem; background:#f8f9fa; color:#212529; }
+    h1 { color:#343a40; }
+    form { max-width:400px; background:#fff; padding:1.5rem; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 1rem; font-size:0.9rem; color:#495057; }
+    input { width: 100%; padding: 0.5rem; margin-top:0.3rem; border:1px solid #ced4da; border-radius:4px; }
+    button { margin-top: 1.5rem; padding: 0.6rem 1.2rem; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button:hover { background:#0056b3; }
     .result { margin-top: 2rem; font-size: 1.2rem; font-weight: bold; }
   </style>
 </head>
@@ -17,13 +20,27 @@
   <p>Este ejemplo usa una API de regresión entrenada con el dataset California Housing. La aplicación envía los datos al servidor, el modelo calcula una estimación del valor medio de la vivienda y devuelve la respuesta.</p>
 
   <form id="predict-form">
-    <label>MedInc: <input type="number" step="0.01" name="MedInc" value="3.0"></label>
-    <label>HouseAge: <input type="number" step="1" name="HouseAge" value="30"></label>
-    <label>AveRooms: <input type="number" step="0.1" name="AveRooms" value="5.0"></label>
-    <label>AveBedrms: <input type="number" step="0.1" name="AveBedrms" value="1.0"></label>
-    <label>Population: <input type="number" step="1" name="Population" value="1000"></label>
-    <label>Latitude: <input type="number" step="0.1" name="Latitude" value="34.0"></label>
-    <label>Longitude: <input type="number" step="0.1" name="Longitude" value="-118.0"></label>
+    <label>MedInc (Ingreso mediano, en decenas de miles de dólares):
+      <input type="number" step="0.01" name="MedInc" value="3.0">
+    </label>
+    <label>HouseAge (Edad media de las casas, en años):
+      <input type="number" step="1" name="HouseAge" value="30">
+    </label>
+    <label>AveRooms (Número promedio de habitaciones por vivienda):
+      <input type="number" step="0.1" name="AveRooms" value="5.0">
+    </label>
+    <label>AveBedrms (Número promedio de dormitorios por vivienda):
+      <input type="number" step="0.1" name="AveBedrms" value="1.0">
+    </label>
+    <label>Population (Población del distrito):
+      <input type="number" step="1" name="Population" value="1000">
+    </label>
+    <label>Latitude (Latitud del distrito):
+      <input type="number" step="0.1" name="Latitude" value="34.0">
+    </label>
+    <label>Longitude (Longitud del distrito):
+      <input type="number" step="0.1" name="Longitude" value="-118.0">
+    </label>
     <button type="submit">Predecir</button>
   </form>
 
