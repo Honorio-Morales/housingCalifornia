@@ -1,5 +1,6 @@
 __pycache__/
 .env
 .venv/
-models/*.joblib
+# previously ignored models to avoid large binaries, but we commit them for deployment
+# models/*.joblib
 .ipynb_checkpoints/
