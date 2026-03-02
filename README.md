@@ -62,15 +62,22 @@ Despliegue en producción:
 4. Deploy
 
 ### Streamlit en Hugging Face Spaces:
-1. Crea un nuevo Space en Hugging Face (https://huggingface.co/spaces)
-2. Selecciona "Streamlit" como template
-3. Sube tu repositorio (`git push` o interfaz web)
-4. Asegúrate de incluir:
-   - `app/streamlit_app.py`
-   - `models/` (los .joblib entrenados)
-   - `requirements.txt`
-5. Spaces detectará y levantará la app automáticamente
+1. Crea un nuevo Space en Hugging Face (https://huggingface.co/spaces) y elige "Streamlit".
+2. Conecta tu cuenta GitHub y selecciona el repositorio `housingCalifornia`.
+   - Alternativamente, puedes subir los archivos manualmente.
+3. Asegúrate de que el repo contiene estas rutas (ya están en main):
+   - `app/streamlit_app.py` (interfaz ve a la API de Render)
+   - `models/` con los archivos `.joblib` entrenados
+   - `requirements.txt` para instalar dependencias.
+   - opcionalmente `web/index.html` si prefieres una demo HTML estática.
+4. Si necesitas un archivo `.hfignore` crea uno para evitar subir archivos grandes o innecesarios.
+5. Spaces construirá el contenedor y abrirá tu app en unos minutos. La interfaz mostrará los sliders y realizará llamadas a la URL de Render por defecto.
 
+> En caso de querer cambiar la URL de la API, define la variable de entorno `API_URL` en la configuración del Space y apunta a tu servicio o a localhost para pruebas privadas.
+
+Spaces también soporta ejecutar `src/train.py` en el arranque si prefieres reentrenar; sólo configura el comando `streamlit run app/streamlit_app.py` en el campo "App file".
+
+Una vez desplegado, accede a la dirección provista por Hugging Face para ver la UI en vivo y probar predicciones.
 Próximos pasos
 - Revisar el notebook `notebooks/eda.ipynb` para análisis completo
 - Compilar el informe LaTeX: `cd reports && pdflatex report.tex`

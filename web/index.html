@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Housing California Predictor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    label { display: block; margin-top: 1rem; }
+    input { width: 100%; padding: 0.4rem; }
+    button { margin-top: 1.5rem; padding: 0.6rem 1.2rem; }
+    .result { margin-top: 2rem; font-size: 1.2rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Housing California Predictor</h1>
+  <p>Complete the form and click "Predecir" to send data to the API.</p>
+
+  <form id="predict-form">
+    <label>MedInc: <input type="number" step="0.01" name="MedInc" value="3.0"></label>
+    <label>HouseAge: <input type="number" step="1" name="HouseAge" value="30"></label>
+    <label>AveRooms: <input type="number" step="0.1" name="AveRooms" value="5.0"></label>
+    <label>AveBedrms: <input type="number" step="0.1" name="AveBedrms" value="1.0"></label>
+    <label>Population: <input type="number" step="1" name="Population" value="1000"></label>
+    <label>Latitude: <input type="number" step="0.1" name="Latitude" value="34.0"></label>
+    <label>Longitude: <input type="number" step="0.1" name="Longitude" value="-118.0"></label>
+    <button type="submit">Predecir</button>
+  </form>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    const API_URL = 'https://housing-california-api.onrender.com';
+
+    document.getElementById('predict-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const data = {};
+      new FormData(this).forEach((v,k) => data[k] = parseFloat(v));
+      try {
+        const res = await fetch(API_URL + '/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (res.ok) {
+          document.getElementById('result').textContent = 'Predicción: ' + json.prediction;
+        } else {
+          document.getElementById('result').textContent = 'Error: ' + JSON.stringify(json);
+        }
+      } catch(err) {
+        document.getElementById('result').textContent = 'Connection error: ' + err;
+      }
+    });
+  </script>
+</body>
+</html>
