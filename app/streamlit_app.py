@@ -11,7 +11,8 @@ Ingresa las características y obtén una predicción en tiempo real.
 """)
 
 # API endpoint (con fallback local para desarrollo)
-API_URL = os.getenv('API_URL', 'http://localhost:8000')
+# por defecto apunta al servicio desplegado en Render
+API_URL = os.getenv('API_URL', 'https://housing-california-api.onrender.com')
 
 st.info(f"✅ Conectado a: {API_URL}")
 
