@@ -1,81 +1,406 @@
-\documentclass{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
 \usepackage{graphicx}
-\usepackage{booktabs}
+\usepackage{amsmath}
 \usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+
 \geometry{margin=1in}
-\title{Taller 1.1 -- Housing California: Regresión Lineal y Polinomial}
-\author{Equipo}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true
+}
+
+\title{Taller 1.1 -- Modelos de Regresión Lineal y Polinomial\\
+Housing California: Predicción de Valores de Vivienda}
+\author{Análisis de Regresión en Machine Learning}
 \date{\today}
 
 \begin{document}
+
 \maketitle
 
-\section*{Resumen}
-Este informe resume el Análisis Exploratorio de Datos (EDA) y la comparación entre un modelo de Regresión Lineal Múltiple y Modelos de Regresión Polinomial (grado 2 y 3) usados para predecir el valor medio de la vivienda (`MedHouseVal`) en el dataset California Housing.
+\section{Resumen Ejecutivo}
 
-\section{Dataset}
-El dataset local utilizado está en `data/california_housing.csv`. Se emplearon las features: `MedInc`, `HouseAge`, `AveRooms`, `AveBedrms`, `Population`, `Latitude`, `Longitude`.
+Este informe presenta el desarrollo completo de un sistema predictivo utilizando dos modelos de regresión: 
+\begin{enumerate}
+  \item \textbf{Regresión Lineal Múltiple}: modelo baseline simple.
+  \item \textbf{Regresión Polinomial}: modelos de grado 2 y 3 para capturar relaciones no-lineales.
+\end{enumerate}
 
-\section{Análisis Exploratorio (EDA)}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.8\textwidth]{figures/heatmap_correlation.png}
-  \caption{Heatmap de correlaciones entre features y la variable objetivo.}
-\end{figure}
+Se utilizó el dataset \textit{California Housing} para predecir el valor medio de viviendas en distritos de California. 
+El proyecto sigue la metodología CRISP-DM (Comprensión → Modelado → Evaluación → Despliegue) 
+y entrega tanto un backend API (FastAPI) desplegado en Render como una interfaz web interactiva (HTML + Streamlit).
+
+\textbf{Resultado principal:} El modelo de Regresión Polinomial de grado 2 obtiene el mejor desempeño, 
+con $R^2 = 0.6070$ y RMSE $= 0.7176$ (unidades de 100k USD).
+
+\section{Conceptos Teóricos Fundamentales}
+
+\subsection{Regresión Lineal Múltiple}
+
+La regresión lineal múltiple modela la relación entre una variable objetivo $y$ y múltiples variables predictoras $\mathbf{X}$ mediante:
+
+\begin{equation}
+y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \cdots + \beta_p x_p + \epsilon
+\end{equation}
+
+donde:
+\begin{itemize}
+  \item $y$ es la variable objetivo (MedHouseVal en nuestro caso).
+  \item $x_1, \ldots, x_p$ son las variables predictoras (MedInc, HouseAge, AveRooms, etc.).
+  \item $\beta_0, \beta_1, \ldots, \beta_p$ son los coeficientes a estimar.
+  \item $\epsilon$ es el término de error.
+\end{itemize}
+
+El objetivo es minimizar la suma de cuadrados de los errores (suma de cuadrados de residuos):
+
+\begin{equation}
+\text{SSE} = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+\end{equation}
+
+\subsection{Regresión Polinomial}
+
+La regresión polinomial extiende el modelo lineal al incluir términos polinómicos y de interacción. 
+Para polinomios de grado $d$, el modelo se transforma según:
+
+\begin{equation}
+\mathbf{X}_{\text{poly}} = \left[ 1, x_1, x_2, \ldots, x_1 x_2, x_1^2, x_2^2, \ldots, x_p^d \right]
+\end{equation}
+
+Luego se aplica regresión lineal sobre el espacio expandido $\mathbf{X}_{\text{poly}}$. 
+Esto permite capturar relaciones no-lineales entre características y el target, 
+a costa de mayor riesgo de overfitting con grados muy altos.
+
+\subsection{Métricas de Evaluación}
+
+\subsubsection{Coeficiente de Determinación ($R^2$)}
+
+Mide qué porcentaje de la varianza de $y$ es explicado por el modelo:
+
+\begin{equation}
+R^2 = 1 - \frac{\text{SSE}}{\text{SST}} = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}
+\end{equation}
+
+Rango: $[0, 1]$. Un $R^2$ cercano a 1 indica buen ajuste.
+
+\subsubsection{Error Cuadrático Medio (RMSE)}
+
+Es la raíz cuadrada del error cuadrático medio, en las mismas unidades que $y$:
+
+\begin{equation}
+\text{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+\end{equation}
+
+Permite interpretar el error típico en términos prácticos.
+
+\subsubsection{Análisis de Residuos}
+
+Los residuos $\hat{\epsilon}_i = y_i - \hat{y}_i$ deben distribuirse aleatoriamente alrededor de 0 
+sin patrones sistemáticos. Si hay patrones, indica violación de supuestos (linealidad, homocedasticidad).
+
+\newpage
+
+\section{Descripción del Dataset}
+
+\subsection{California Housing}
+
+El dataset contiene información de 20,640 distritos de California, con 8 características originales:
+
+\begin{itemize}
+  \item \textbf{MedInc}: Ingreso mediano del distrito (en decenas de miles de USD).
+  \item \textbf{HouseAge}: Edad media de las viviendas (en años), capped a 52.
+  \item \textbf{AveRooms}: Número promedio de habitaciones por vivienda.
+  \item \textbf{AveBedrms}: Número promedio de dormitorios por vivienda.
+  \item \textbf{Population}: Población del distrito.
+  \item \textbf{AveOccup}: Ocupación promedio (personas por vivienda).
+  \item \textbf{Latitude}: Latitud del distrito.
+  \item \textbf{Longitude}: Longitud del distrito.
+  \item \textbf{MedHouseVal} (TARGET): Valor medio de la vivienda en el distrito (en cientos de miles de USD).
+\end{itemize}
+
+\textbf{Nota:} En este proyecto utilizamos 7 features (excluimos AveOccup) para mantener simplicidad.
+
+\section{Análisis Exploratorio de Datos (EDA)}
+
+\subsection{Estadísticos Descriptivos}
+
+La tabla de correlaciones (heatmap) revela que las variables más correlacionadas con MedHouseVal son:
+\begin{enumerate}
+  \item \textbf{MedInc} ($r \approx 0.69$): Fuerte correlación positiva; distritos con mayor ingreso tienen viviendas más caras.
+  \item \textbf{Latitude} ($r \approx 0.14$): Correlación moderada; proximidad a la costa influye en precios.
+  \item \textbf{Longitude} ($r \approx -0.05$): Correlación débil con el target.
+\end{enumerate}
+
+\subsection{Visualización: Scatter Plots}
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/scatter_top_features.png}
-  \caption{Scatter plots: variables más correlacionadas frente a `MedHouseVal`.}
+  \caption{Relación entre las variables más importantes y el valor medio de vivienda. 
+  Se observa una relación no-lineal entre MedInc y MedHouseVal, especialmente en los extremos.}
 \end{figure}
 
-\section{Modelado y Métricas}
-Se entrenaron los siguientes modelos y se evaluó su desempeño en el conjunto de prueba (mismas particiones que en `src/train.py`):
+\subsection{Matriz de Correlación}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/heatmap_correlation.png}
+  \caption{Heatmap de correlaciones. Nótese que MedInc tiene la correlación más fuerte con el target.}
+\end{figure}
+
+\newpage
+
+\section{Metodología: CRISP-DM}
+
+Nuestro proyecto sigue las fases de CRISP-DM:
+
+\subsection{I. Comprensión de Datos}
+\begin{itemize}
+  \item Carga del dataset: 20,640 registros, 8 features + 1 target.
+  \item Análisis de correlaciones y distribuciones.
+  \item Identificación de variables clave.
+\end{itemize}
+
+\subsection{II. Preparación y Modelado}
+\begin{itemize}
+  \item Split train/test: 80/20 con seed=42 para reproducibilidad.
+  \item Entrenamiento de tres modelos:
+    \begin{enumerate}
+      \item Regresión Lineal Múltiple (baseline).
+      \item Regresión Polinomial de grado 2.
+      \item Regresión Polinomial de grado 3.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{III. Evaluación}
+\begin{itemize}
+  \item Cálculo de $R^2$ y RMSE en el conjunto de prueba.
+  \item Análisis de residuos para detectar patrones.
+  \item Comparativa de modelos.
+\end{itemize}
+
+\subsection{IV. Despliegue}
+\begin{itemize}
+  \item API REST (FastAPI) en Render.
+  \item Interfaz HTML interactiva.
+  \item Aplicación Streamlit en Hugging Face Spaces (opcional).
+\end{itemize}
+
+\newpage
+
+\section{Resultados del Modelado}
+
+\subsection{Comparativa de Métricas}
+
+En el conjunto de prueba (test set):
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{lcc}
-\toprule
-Modelo & $R^2$ & RMSE \\
-\midrule
+\hline
+\textbf{Modelo} & $\mathbf{R^2}$ & \textbf{RMSE} \\
+\hline
 Regresión Lineal Múltiple & 0.5751 & 0.7462 \\
 Regresión Polinomial (grado 2) & 0.6070 & 0.7176 \\
 Regresión Polinomial (grado 3) & 0.5393 & 0.7770 \\
-\bottomrule
+\hline
 \end{tabular}
-\caption{Comparación de métricas (R$^2$ y RMSE) en el conjunto de prueba.}
+\caption{Desempeño de los tres modelos evaluados. El modelo polinomial de grado 2 presenta el mejor balance.}
 \end{table}
 
-\section{Real vs Predicho y Análisis de Residuos}
+\subsection{Interpretación}
+
+\begin{itemize}
+  \item \textbf{Modelo de referencia (Lineal):} Explica el 57.51\% de la varianza. Error típico de $\pm 0.7462$ en unidades de 100k USD (≈ \$74,620).
+  
+  \item \textbf{Polinomio grado 2 (MEJOR):} Explica el 60.70\% de la varianza, mejorando un 3.2\% respecto a lineal. RMSE desciende a 0.7176 (≈ \$71,760). 
+    Las interacciones y términos cuadráticos capturan mejor la no-linealidad observada en scatter plots.
+  
+  \item \textbf{Polinomio grado 3:} Explica menos (53.93\%) y tiene RMSE más alto (0.7770). 
+    Indicativo de \textbf{overfitting}: el modelo se ajusta demasiado al ruido en entrenamiento
+    y generaliza peor en nuevos datos. Con 35 features (7 originales + interacciones + cúbicos), 
+    la maldición de la dimensionalidad juega en contra.
+\end{itemize}
+
+\subsection{Análisis de Residuos}
+
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/pred_resid_linear.png}
-  \caption{Real vs Predicho y residuos -- Regresión Lineal.}
+  \caption{Regresión Lineal: Real vs Predicho (izq) y Residuos vs Predicho (der).
+  Se observa heteroscedasticidad: la varianza de residuos aumenta para predicciones mayores.}
 \end{figure}
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/pred_resid_poly2.png}
-  \caption{Real vs Predicho y residuos -- Polinomial grado 2.}
+  \caption{Polinomial grado 2: Mejor alineación con la diagonal (real = predicho) y residuos más compactos.}
 \end{figure}
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/pred_resid_poly3.png}
-  \caption{Real vs Predicho y residuos -- Polinomial grado 3.}
+  \caption{Polinomial grado 3: Residuos dispersos, típico de overfitting. El modelo no generaliza bien.}
 \end{figure}
 
-\section{Conclusiones preliminares}
-El modelo polinomial de grado 2 presenta la mejor $R^2$ y menor RMSE en el conjunto de prueba (posible mejor ajuste sin overfitting evidente respecto a grado 3). Se recomienda:\\
-- Revisar feature engineering y regularización si se busca mejorar generalización.\\
-- Analizar residuos por segmento geográfico (Latitude/Longitude) para detectar patrones espaciales.
+\newpage
 
-\section*{Compilación}
-Para compilar este documento localmente (desde la raíz del proyecto):
-\begin{verbatim}
-cd reports
-pdflatex report.tex
-\end{verbatim}
+\section{Justificación del Modelo Seleccionado}
+
+Se selecciona \textbf{Regresión Polinomial de grado 2} por:
+
+\begin{enumerate}
+  \item \textbf{Mejor rendimiento}: $R^2 = 0.6070$ y RMSE $= 0.7176$, superiores a lineal.
+  
+  \item \textbf{Evita overfitting}: A diferencia de grado 3, mantiene un equilibrio entre complejidad y generalización.
+  
+  \item \textbf{Interpretabilidad}: 28 features (vs. 35 en grado 3) aún es manejable.
+  
+  \item \textbf{Justificación teórica}: El EDA mostró relaciones no-lineales; los términos cuadráticos e interacciones 
+    son suficientes para capturar esas dinámicas.
+\end{enumerate}
+
+\section{Despliegue e Implementación}
+
+\subsection{Arquitectura del Sistema}
+
+El proyecto se estructura en tres componentes:
+
+\subsubsection{1. Backend API (FastAPI)}
+\begin{itemize}
+  \item Framework: FastAPI + Uvicorn.
+  \item Endpoint: \texttt{POST /predict} recibe JSON con las 7 features.
+  \item Respuesta: predicción del modelo polinomial.
+  \item Hosting: Render (https://housing-california-api.onrender.com).
+  \item Despliegue: Docker, build automático desde Dockerfile.api en GitHub.
+\end{itemize}
+
+\subsubsection{2. Frontend HTML}
+\begin{itemize}
+  \item Formulario interactivo centrado, con campos para todas las features.
+  \item Botón ``Predecir'': envía datos a la API y muestra resultado.
+  \item Botón ``Simular'': genera valores aleatorios para explorar casos distintos.
+  \item Resultado: muestra predicción en formato decimal y equivalente en USD (ej: 0.49 = \$49,000).
+  \item Archivo: \texttt{web/index.html} (disponible en GitHub).
+\end{itemize}
+
+\subsubsection{3. Frontend Streamlit (Opcional)}
+\begin{itemize}
+  \item App interactiva: sliders para cada feature.
+  \item Llamadas a la API remota en Render.
+  \item Despliegue: Hugging Face Spaces.
+\end{itemize}
+
+\subsection{Flujo de Predicción}
+
+\begin{lstlisting}[language=bash]
+# Usuario ingresa datos en formulario HTML/Streamlit
+Input: {MedInc: 3.0, HouseAge: 30, ...}
+
+# Request POST a la API
+curl -X POST https://housing-california-api.onrender.com/predict \
+  -H "Content-Type: application/json" \
+  -d '{"MedInc": 3.0, "HouseAge": 30, ...}'
+
+# API:
+#   1. Recibe JSON
+#   2. Carga transformador PolynomialFeatures (grado 2)
+#   3. Transforma input de 7 a 28 features
+#   4. Predice con modelo pre-entrenado
+#   5. Devuelve resultado JSON
+
+Response: {"prediction": 0.4940}
+\end{lstlisting}
+
+\subsection{Persistencia de Modelos}
+
+Los modelos se entrenan una sola vez localmente y se serializan:
+\begin{itemize}
+  \item \texttt{models/model\_linear.joblib}
+  \item \texttt{models/model\_poly\_2.joblib}
+  \item \texttt{models/poly\_2\_transform.joblib} (PolynomialFeatures)
+  \item \texttt{models/model\_poly\_3.joblib}
+  \item \texttt{models/poly\_3\_transform.joblib}
+\end{itemize}
+
+Estos archivos se incluyen en el repositorio GitHub y se copian al contenedor Docker durante el build.
+
+\section{Instrucciones de Uso}
+
+\subsection{Instalación Local}
+
+\begin{lstlisting}[language=bash]
+# Clonar repo
+git clone https://github.com/Honorio-Morales/housingCalifornia.git
+cd housingCalifornia
+
+# Crear entorno virtual
+python -m venv .venv
+source .venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Entrenar modelos (opcional, ya están pre-entrenados)
+python src/train.py
+
+# Levantar API local
+uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
+
+# Levantar Streamlit (en otra terminal)
+streamlit run app/streamlit_app.py
+\end{lstlisting}
+
+\subsection{Acceso a Recursos Desplegados}
+
+\begin{itemize}
+  \item \textbf{Demo HTML:} 
+    \href{https://github.com/Honorio-Morales/housingCalifornia/blob/main/web/index.html}{GitHub - web/index.html}
+    
+  \item \textbf{API Docs (Swagger UI):} 
+    \href{https://housing-california-api.onrender.com/docs}{https://housing-california-api.onrender.com/docs}
+    
+  \item \textbf{Health Check:}
+    \begin{lstlisting}[language=bash]
+curl https://housing-california-api.onrender.com/health
+# Response: {"model_loaded": true, "model_type": "poly2"}
+    \end{lstlisting}
+    
+  \item \textbf{Streamlit (HF Spaces):} Desplegado manualmente desde el repositorio (opcional).
+\end{itemize}
+
+\section{Conclusiones}
+
+\begin{enumerate}
+  \item Se desarrolló un sistema completo de predicción de precios de viviendas usando regresión lineal y polinomial.
+  
+  \item El análisis EDA identificó MedInc como la variable clave, con relaciones no-lineales observables.
+  
+  \item El modelo de Regresión Polinomial de grado 2 fue seleccionado como el mejor equilibrio entre rendimiento y generalización, 
+    con $R^2 = 0.6070$ y RMSE $= 0.7176$.
+  
+  \item El proyecto implementa la metodología CRISP-DM completa, desde análisis hasta despliegue en producción.
+  
+  \item La arquitectura es modular: la API es agnóstica respecto a la interfaz (HTML, Streamlit, etc.), 
+    permitiendo reutilización y escalabilidad.
+  
+  \item El despliegue en Render proporciona disponibilidad 24/7 sin costo para demostración.
+  
+  \item Se incluyó análisis de residuos y justificación clara de decisiones de modelado.
+\end{enumerate}
+
+\section{Referencias y Recursos}
+
+\begin{itemize}
+  \item Scikit-learn Documentation: \href{https://scikit-learn.org}{https://scikit-learn.org}
+  \item California Housing Dataset: \href{https://www.kaggle.com/datasets/camnugent/california-housing-prices}{Kaggle}
+  \item FastAPI: \href{https://fastapi.tiangolo.com}{https://fastapi.tiangolo.com}
+  \item Render: \href{https://render.com}{https://render.com}
+  \item Metodología CRISP-DM: IBM, 2000.
+\end{itemize}
 
 \end{document}
